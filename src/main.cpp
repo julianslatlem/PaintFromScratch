@@ -122,20 +122,67 @@ bool GetCursorPixelCoordinates(int& x, int& y) {
 	return false;
 }
 
+template <class T> void swap(T& a, T& b)
+{
+	T c(a); a = b; b = c;
+}
+
+void line(int x0, int y0, int x1, int y1, unsigned int color) {
+	bool steep = false;
+	if (abs(x0 - x1) < abs(y0 - y1)) {
+		swap(x0, y0);
+		swap(x1, y1);
+		steep = true;
+	}
+	if (x0 > x1) {
+		swap(x0, x1);
+		swap(y0, y1);
+	}
+	int dx = x1 - x0;
+	int dy = y1 - y0;
+	int derror2 = abs(dy) * 2;
+	int error2 = 0;
+	int y = y0;
+	for (int x = x0; x <= x1; x++) {
+		if (steep) {
+			SetPixel(y, x, color);
+		}
+		else {
+			SetPixel(x, y, color);
+		}
+		error2 += derror2;
+		if (error2 > dx) {
+			y += (y1 > y0 ? 1 : -1);
+			error2 -= dx * 2;
+		}
+	}
+}
+
+int lastX;
+int lastY;
+
+void Draw(int x, int y, unsigned int color) {
+	line(x, y, lastX, lastY, color);
+
+	lastX = x;
+	lastY = y;
+}
+
 int main() {
 	CreateWindowContext(1280, 720, "Window Title");
 
 	int mouseX = 0;
 	int mouseY = 0;
 
+	GetCursorPixelCoordinates(mouseX, mouseY);
+
+	lastX = mouseX;
+	lastY = mouseY;
+
 	while (running) {
-		ClearWindow();
+		GetCursorPixelCoordinates(mouseX, mouseY);
 
-		SetPixel(200, 200, 0xff0000);
-		SetPixel(200, 201, 0xff0000);
-		//GetCursorPixelCoordinates(mouseX, mouseY);
-
-		std::cout << mouseX << " " << mouseY << std::endl;
+		Draw(mouseX, mouseY, 0xfabbbb);
 
 		UpdateWindow();
 	}
