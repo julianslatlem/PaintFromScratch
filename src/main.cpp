@@ -80,7 +80,11 @@ void UpdateWindow() {
 		DispatchMessageA(&msg);
 	}
 
-	StretchDIBits(GetDC(window), 0, 0, bufferWidth, bufferHeight, 0, 0, bufferWidth, bufferHeight, bufferMemory, &bufferBitmapInfo, DIB_RGB_COLORS, SRCCOPY);
+	HDC hdc = GetDC(window);
+
+	StretchDIBits(hdc, 0, 0, bufferWidth, bufferHeight, 0, 0, bufferWidth, bufferHeight, bufferMemory, &bufferBitmapInfo, DIB_RGB_COLORS, SRCCOPY);
+
+	ReleaseDC(window, hdc);
 }
 
 int GetWindowWidth() {
@@ -158,11 +162,86 @@ void line(int x0, int y0, int x1, int y1, unsigned int color) {
 	}
 }
 
+unsigned int BlendColors(unsigned int sourceColor, unsigned int destColor, float alpha) {
+	// Extract the individual color channels (RGBA) from the source and destination colors.
+	unsigned int sourceR = (sourceColor >> 16) & 0xFF;
+	unsigned int sourceG = (sourceColor >> 8) & 0xFF;
+	unsigned int sourceB = sourceColor & 0xFF;
+	unsigned int sourceA = (sourceColor >> 24) & 0xFF;
+
+	unsigned int destR = (destColor >> 16) & 0xFF;
+	unsigned int destG = (destColor >> 8) & 0xFF;
+	unsigned int destB = destColor & 0xFF;
+	unsigned int destA = (destColor >> 24) & 0xFF;
+
+	// Calculate the blended color channels using alpha blending.
+	unsigned int blendedR = static_cast<unsigned int>((sourceR * alpha) + (destR * (1.0f - alpha)));
+	unsigned int blendedG = static_cast<unsigned int>((sourceG * alpha) + (destG * (1.0f - alpha)));
+	unsigned int blendedB = static_cast<unsigned int>((sourceB * alpha) + (destB * (1.0f - alpha)));
+	unsigned int blendedA = static_cast<unsigned int>((sourceA * alpha) + (destA * (1.0f - alpha)));
+
+	// Combine the blended color channels into a single color value.
+	unsigned int blendedColor =
+		(blendedA << 24) | (blendedR << 16) | (blendedG << 8) | blendedB;
+
+	return blendedColor;
+}
+
+void WuLine(int x0, int y0, int x1, int y1, unsigned int color) {
+	// Determine if the line is steep, i.e., slope > 45 degrees or not.
+	bool steep = abs(y1 - y0) > abs(x1 - x0);
+
+	// If the line is steep, swap x and y coordinates.
+	if (steep) {
+		swap(x0, y0);
+		swap(x1, y1);
+	}
+
+	// Ensure that the line is always drawn from left to right.
+	if (x0 > x1) {
+		swap(x0, x1);
+		swap(y0, y1);
+	}
+
+	// Calculate the delta in x and y, and the initial fractional part of y.
+	int dx = x1 - x0;
+	int dy = y1 - y0;
+	float gradient = static_cast<float>(dy) / dx;
+
+	// Initial coordinates and fractional part of y.
+	int xpxl1 = x0;
+	int xpxl2 = x1;
+	float intery = y0;
+
+	// Calculate the alpha component of the color for blending.
+	float alpha = 1.0f;
+
+	// Main loop for drawing the line.
+	for (int x = xpxl1; x <= xpxl2; x++) {
+		if (steep) {
+			int y = static_cast<int>(intery);
+			// Calculate the alpha component based on the fractional part.
+			alpha = intery - static_cast<int>(intery);
+			SetPixel(y, x, BlendColors(GetPixel(y, x), color, alpha));
+			SetPixel(y + 1, x, BlendColors(GetPixel(y + 1, x), color, 1.0f - alpha));
+		}
+		else {
+			int y = static_cast<int>(intery);
+			// Calculate the alpha component based on the fractional part.
+			alpha = intery - static_cast<int>(intery);
+			SetPixel(x, y, BlendColors(GetPixel(x, y), color, alpha));
+			SetPixel(x, y + 1, BlendColors(GetPixel(x, y + 1), color, 1.0f - alpha));
+		}
+		intery += gradient;
+	}
+}
+
 int lastX;
 int lastY;
 
 void Draw(int x, int y, unsigned int color) {
-	line(x, y, lastX, lastY, color);
+	WuLine(x, y, lastX, lastY, color);
+	//line(x, y, lastX, lastY, color);
 
 	lastX = x;
 	lastY = y;
@@ -182,7 +261,7 @@ int main() {
 	while (running) {
 		GetCursorPixelCoordinates(mouseX, mouseY);
 
-		Draw(mouseX, mouseY, 0xfabbbb);
+		Draw(mouseX, mouseY, 0xffffff);
 
 		UpdateWindow();
 	}
