@@ -5,6 +5,8 @@
 
 bool running = true;
 
+bool rightMouse = false;
+
 static HWND window;
 
 LRESULT CALLBACK WindowCallback(HWND window, UINT msg, WPARAM wParam, LPARAM lParam) {
@@ -34,6 +36,14 @@ LRESULT CALLBACK WindowCallback(HWND window, UINT msg, WPARAM wParam, LPARAM lPa
 			bufferBitmapInfo.bmiHeader.biPlanes = 1;
 			bufferBitmapInfo.bmiHeader.biBitCount = 32;
 			bufferBitmapInfo.bmiHeader.biCompression = BI_RGB;
+		} break;
+
+		case WM_KEYDOWN: {
+			rightMouse = true;
+		} break;
+
+		case WM_KEYUP: {
+			rightMouse = false;
 		} break;
 
 		default: {
@@ -222,15 +232,15 @@ void WuLine(int x0, int y0, int x1, int y1, unsigned int color) {
 			int y = static_cast<int>(intery);
 			// Calculate the alpha component based on the fractional part.
 			alpha = intery - static_cast<int>(intery);
-			SetPixel(y, x, BlendColors(GetPixel(y, x), color, alpha));
-			SetPixel(y + 1, x, BlendColors(GetPixel(y + 1, x), color, 1.0f - alpha));
+			SetPixel(y, x, BlendColors(PixelGetPixel(y, x), color, alpha));
+			SetPixel(y + 1, x, BlendColors(PixelGetPixel(y + 1, x), color, 1.0f - alpha));
 		}
 		else {
 			int y = static_cast<int>(intery);
 			// Calculate the alpha component based on the fractional part.
 			alpha = intery - static_cast<int>(intery);
-			SetPixel(x, y, BlendColors(GetPixel(x, y), color, alpha));
-			SetPixel(x, y + 1, BlendColors(GetPixel(x, y + 1), color, 1.0f - alpha));
+			SetPixel(x, y, BlendColors(PixelGetPixel(x, y), color, alpha));
+			SetPixel(x, y + 1, BlendColors(PixelGetPixel(x, y + 1), color, 1.0f - alpha));
 		}
 		intery += gradient;
 	}
@@ -247,8 +257,26 @@ void Draw(int x, int y, unsigned int color) {
 	lastY = y;
 }
 
+void DrawPixelBuffer() {
+	for (int y = 0; y < pixelBufferHeight; y++) {
+		for (int x = 0; x < pixelBufferWidth; x++) {
+			DrawPixel(x, y, PixelGetPixel(x, y));
+		}
+	}
+}
+
 int main() {
 	CreateWindowContext(1280, 720, "Window Title");
+
+	RECT rect;
+	GetClientRect(window, &rect);
+	pixelBufferWidth = rect.right - rect.left;
+	pixelBufferHeight = rect.bottom - rect.top;
+
+	int pixelBufferSize = pixelBufferWidth * pixelBufferHeight * sizeof(unsigned int);
+
+	if (pixelBufferMemory) VirtualFree(pixelBufferMemory, 0, MEM_RELEASE);
+	pixelBufferMemory = VirtualAlloc(0, pixelBufferSize, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
 
 	int mouseX = 0;
 	int mouseY = 0;
@@ -258,12 +286,28 @@ int main() {
 	lastX = mouseX;
 	lastY = mouseY;
 
+	bool leftMouseButtonDown = false;
+
 	while (running) {
+		ClearWindowColor(0xffffff);
 		GetCursorPixelCoordinates(mouseX, mouseY);
 
-		Draw(mouseX, mouseY, 0xffffff);
+		if (GetAsyncKeyState(VK_LBUTTON) & 0x8001) {
+			if (!leftMouseButtonDown) {
+				lastX = mouseX; lastY = mouseY;
+			}
+			leftMouseButtonDown = true;
+		}
+		else {
+			leftMouseButtonDown = false;
+		}
+
+		if (leftMouseButtonDown) Draw(mouseX, mouseY, 0xffffff);
+
+		DrawPixelBuffer();
 
 		UpdateWindow();
+
 	}
 
 	return 0;
