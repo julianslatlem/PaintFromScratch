@@ -75,6 +75,15 @@ void ClearWindow() {
 	}
 }
 
+void ClearCanvas() {
+	unsigned int* pixel = (unsigned int*)pixelBufferMemory;
+	for (int y = 0; y < pixelBufferHeight; y++) {
+		for (int x = 0; x < pixelBufferWidth; x++) {
+			*pixel++ = 0x000000;
+		}
+	}
+}
+
 void ClearWindowColor(unsigned int color) {
 	unsigned int* pixel = (unsigned int*)bufferMemory;
 	for (int y = 0; y < bufferHeight; y++) {
@@ -131,12 +140,12 @@ void FillCircleBlend(int centerX, int centerY, int radius, unsigned int color) {
 
 	while (x >= y) {
 		for (int i = centerX - x; i <= centerX + x; i++) {
-			DrawPixel(i, centerY + y, BlendColors(color, GetPixel(i, centerY + y), 0.5f));
-			DrawPixel(i, centerY - y, BlendColors(color, GetPixel(i, centerY - y), 0.5f));
+			DrawPixel(i, centerY + y, BlendColors(color, GetPixel(i, centerY + y), 0.3f));
+			DrawPixel(i, centerY - y, BlendColors(color, GetPixel(i, centerY - y), 0.3f));
 		}
 		for (int i = centerX - y; i <= centerX + y; i++) {
-			DrawPixel(i, centerY + x, BlendColors(color, GetPixel(i, centerY + x), 0.5f));
-			DrawPixel(i, centerY - x, BlendColors(color, GetPixel(i, centerY - x), 0.5f));
+			DrawPixel(i, centerY + x, BlendColors(color, GetPixel(i, centerY + x), 0.3f));
+			DrawPixel(i, centerY - x, BlendColors(color, GetPixel(i, centerY - x), 0.3f));
 		}
 
 		if (err <= 0) {
@@ -177,6 +186,114 @@ void FillCircleW(int centerX, int centerY, int radius, unsigned int color) {
 		}
 	}
 }
+
+void FillCircleWMain(int centerX, int centerY, int radius, unsigned int color) {
+	int x = radius;
+	int y = 0;
+	int err = 0;
+
+	while (x >= y) {
+		for (int i = centerX - x; i <= centerX + x; i++) {
+			DrawPixel(i, centerY + y, color);
+			DrawPixel(i, centerY - y, color);
+		}
+		for (int i = centerX - y; i <= centerX + y; i++) {
+			DrawPixel(i, centerY + x, color);
+			DrawPixel(i, centerY - x, color);
+		}
+
+		if (err <= 0) {
+			y += 1;
+			err += 2 * y + 1;
+		}
+
+		if (err > 0) {
+			x -= 1;
+			err -= 2 * x + 1;
+		}
+	}
+}
+
+unsigned int BlendColorss(unsigned int background, unsigned int foreground, int intensity) {
+	int alpha = intensity;
+	int invAlpha = 255 - intensity;
+
+	int blendedRed = (GetRValue(background) * invAlpha + GetRValue(foreground) * alpha) / 255;
+	int blendedGreen = (GetGValue(background) * invAlpha + GetGValue(foreground) * alpha) / 255;
+	int blendedBlue = (GetBValue(background) * invAlpha + GetBValue(foreground) * alpha) / 255;
+
+	return RGB(blendedRed, blendedGreen, blendedBlue);
+}
+
+void FillCircleAntiAliased(int centerX, int centerY, int radius, unsigned int color) {
+	for (int x = centerX - radius; x <= centerX + radius; x++) {
+		for (int y = centerY - radius; y <= centerY + radius; y++) {
+			// Calculate the distance from the current pixel to the circle center
+			double distance = sqrt((x - centerX) * (x - centerX) + (y - centerY) * (y - centerY));
+
+			// Calculate the coverage based on the distance and radius
+			double coverage = 1.0 - (distance - radius + 0.5);
+
+			// Ensure the coverage is within the range [0, 1]
+			coverage = max(0.0, min(1.0, coverage));
+
+			// Calculate the alpha (transparency) of the new circle color
+			int alpha = static_cast<int>(coverage * 255);
+
+			// Blend the color with the existing pixel color based on alpha
+			unsigned int existingColor = GetPixel(x, y);
+			unsigned int blendedColor = BlendColorss(existingColor, color, alpha);
+
+			// Set the pixel with the blended color
+			SetPixel(x, y, blendedColor);
+		}
+	}
+}
+
+void FillCircleAntiAliasedSSAA(int centerX, int centerY, int radius, unsigned int color, int scaleFactor) {
+	int scaledRadius = radius * scaleFactor;
+	int scaledWidth = scaledRadius * 2;
+	int outputWidth = scaledWidth / scaleFactor;
+
+	for (int x = centerX - scaledRadius; x <= centerX + scaledRadius; x++) {
+		for (int y = centerY - scaledRadius; y <= centerY + scaledRadius; y++) {
+			double coverage = 0.0;
+
+			for (int subX = 0; subX < scaleFactor; subX++) {
+				for (int subY = 0; subY < scaleFactor; subY++) {
+					// Calculate the subpixel coordinates within the pixel
+					double subXCoord = (x - centerX + subX / static_cast<double>(scaleFactor)) / scaledRadius;
+					double subYCoord = (y - centerY + subY / static_cast<double>(scaleFactor)) / scaledRadius;
+
+					// Calculate the distance from the subpixel to the circle center
+					double subDistance = sqrt(subXCoord * subXCoord + subYCoord * subYCoord);
+
+					// Calculate the subpixel coverage
+					double subCoverage = 1.0 - (subDistance - 1.0);
+
+					// Ensure the subpixel coverage is within the range [0, 1]
+					subCoverage = max(0.0, min(1.0, subCoverage));
+
+					// Accumulate the subpixel coverage
+					coverage += subCoverage;
+				}
+			}
+
+			// Calculate the average coverage for the pixel
+			coverage /= (scaleFactor * scaleFactor);
+
+			// Blend the color with the existing pixel color based on the coverage
+			unsigned int existingColor = GetPixel(x / scaleFactor, y / scaleFactor);
+			unsigned int blendedColor = BlendColorss(existingColor, color, static_cast<int>(coverage * 255));
+
+			// Set the pixel with the blended color
+			SetPixel(x / scaleFactor, y / scaleFactor, blendedColor);
+		}
+	}
+}
+
+
+
 
 void DrawCircle(int centerX, int centerY, int radius, unsigned int color) {
 	int x = radius;

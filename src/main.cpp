@@ -9,6 +9,11 @@ bool rightMouse = false;
 
 static HWND window;
 
+// Initialize variables
+LARGE_INTEGER frequency, lastTime, currentTime;
+double deltaTime, fps;
+int frameCount = 0;
+
 LRESULT CALLBACK WindowCallback(HWND window, UINT msg, WPARAM wParam, LPARAM lParam) {
 	LRESULT result = 0;
 
@@ -289,6 +294,37 @@ void lineS(int x0, int y0, int x1, int y1, unsigned int color, int lineWidth) {
 	}
 }
 
+void lineSMain(int x0, int y0, int x1, int y1, unsigned int color, int lineWidth) {
+	bool steep = false;
+	if (abs(x0 - x1) < abs(y0 - y1)) {
+		swap(x0, y0);
+		swap(x1, y1);
+		steep = true;
+	}
+	if (x0 > x1) {
+		swap(x0, x1);
+		swap(y0, y1);
+	}
+	int dx = x1 - x0;
+	int dy = y1 - y0;
+	int derror2 = abs(dy) * 2;
+	int error2 = 0;
+	int y = y0;
+	for (int x = x0; x <= x1; x++) {
+		if (steep) {
+			FillCircleWMain(y, x, lineWidth / 2, color);
+		}
+		else {
+			FillCircleWMain(x, y, lineWidth / 2, color);
+		}
+		error2 += derror2;
+		if (error2 > dx) {
+			y += (y1 > y0 ? 1 : -1);
+			error2 -= dx * 2;
+		}
+	}
+}
+
 void WuLineWMain(int x0, int y0, int x1, int y1, unsigned int color, int lineWidth) {
 	// Determine if the line is steep, i.e., slope > 45 degrees or not.
 	bool steep = abs(y1 - y0) > abs(x1 - x0);
@@ -353,7 +389,7 @@ void DrawPixelBuffer() {
 }
 
 int main() {
-	CreateWindowContext(1280, 720, "Window Title");
+	CreateWindowContext(1280, 720, "Paint 2.0");
 
 	pixelBufferWidth = 2560;
 	pixelBufferHeight = 1440;
@@ -374,8 +410,11 @@ int main() {
 	bool leftMouseButtonDown = false;
 	bool tabDown = false;
 	bool eDown = false;
+	bool cDown = false;
 	bool upDown = false;
 	bool downDown = false;
+	bool scrollUp = false;
+	bool scrollDown = false;
 
 	unsigned int activeColor = 0;
 
@@ -385,7 +424,39 @@ int main() {
 
 	int lineWidth = 30;
 
+
+	// Get the frequency of the performance counter
+	QueryPerformanceFrequency(&frequency);
+
+	// Get the initial time
+	QueryPerformanceCounter(&lastTime);
+
 	while (running) {
+
+
+		// Calculate delta time (time elapsed since the last frame)
+		QueryPerformanceCounter(&currentTime);
+		deltaTime = static_cast<double>(currentTime.QuadPart - lastTime.QuadPart) / frequency.QuadPart;
+
+		// Calculate FPS
+		fps = 1.0 / deltaTime;
+
+		// Update frame count
+		frameCount++;
+
+		// Output FPS every second
+		if (deltaTime >= 1.0) {
+			std::cout << "FPS: " << frameCount << std::endl;
+
+			// Reset frame count and last time
+			frameCount = 0;
+			lastTime = currentTime;
+		}
+
+
+
+
+
 		ClearWindowColor(0x000000);
 		GetCursorPixelCoordinates(mouseX, mouseY);
 
@@ -444,6 +515,27 @@ int main() {
 			eDown = false;
 		}
 
+		if (GetAsyncKeyState(0x43) & 0x8001) {
+			if (!cDown) {
+				ClearCanvas();
+			}
+			cDown = true;
+		}
+		else {
+			cDown = false;
+		}
+
+		if (GetAsyncKeyState(VK_SCROLL) & 1) {
+			// Scroll wheel was released (scroll-up)
+			if (!scrollUp) {
+				lineWidth += 2;
+			}
+			scrollUp = true;
+		}
+		else {
+			scrollUp = false;
+		}
+
 		if (leftMouseButtonDown) {
 			if (!eraser) {
 				if (lineWidth > 1) Draw(mouseX, mouseY, colors[activeColor], lineWidth);
@@ -462,11 +554,28 @@ int main() {
 		}
 		else DrawCircle(mouseX, mouseY, lineWidth, 0xff0000);
 
+
+
+
+
+		// UI
+
+		DrawRect(0, 0, GetWindowWidth(), 50, 0x101010);
+		WuLineWMain(0, 50, GetWindowWidth(), 50, 0x282828, 1);
+		//DrawRect((GetWindowWidth() / 2) - 20, 5, (GetWindowWidth() / 2) + 20, 45, 0xffffff);
+
+		//lineSMain((GetWindowWidth() / 2) - 15, 10, (GetWindowWidth() / 2) + 15, 40, 0xffffff, 10);
+
 		if (eraser) {
-			WuLineWMain(0, 0, 50, 50, 0xff0000, 2);
-			WuLineWMain(0, 50, 50, 0, 0xff0000, 2);
+			WuLineWMain(5, 5, 45, 45, 0xff0000, 1);
+			WuLineWMain(5, 45, 45, 5, 0xff0000, 1);
+
+			WuLineWMain(5, 5, 45, 5, 0xff0000, 1);
+			WuLineWMain(45, 5, 45, 45, 0xff0000, 1);
+			WuLineWMain(45, 45, 5, 45, 0xff0000, 1);
+			WuLineWMain(5, 45, 5, 5, 0xff0000, 1);
 		}
-		else DrawRect(0, 0, 50, 50, colors[activeColor]);
+		else DrawRect(5, 5, 45, 45, colors[activeColor]);
 
 		UpdateWindow();
 
