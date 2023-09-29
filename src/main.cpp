@@ -246,11 +246,46 @@ void WuLine(int x0, int y0, int x1, int y1, unsigned int color) {
 	}
 }
 
+void WuLineW(int x0, int y0, int x1, int y1, unsigned int color, int lineWidth) {
+	// Determine if the line is steep, i.e., slope > 45 degrees or not.
+	bool steep = abs(y1 - y0) > abs(x1 - x0);
+
+	// If the line is steep, swap x and y coordinates.
+	if (steep) {
+		swap(x0, y0);
+		swap(x1, y1);
+	}
+
+	// Ensure that the line is always drawn from left to right.
+	if (x0 > x1) {
+		swap(x0, x1);
+		swap(y0, y1);
+	}
+
+	// Calculate the delta in x and y, and the initial fractional part of y.
+	int dx = x1 - x0;
+	int dy = y1 - y0;
+	float gradient = static_cast<float>(dy) / dx;
+
+	// Main loop for drawing the line.
+	for (int x = x0; x <= x1; x++) {
+		for (int w = -lineWidth / 2; w <= lineWidth / 2; w++) {
+			int y = static_cast<int>(y0 + gradient * (x - x0)) + w;
+			if (steep) {
+				SetPixel(y, x, color);
+			}
+			else {
+				SetPixel(x, y, color);
+			}
+		}
+	}
+}
+
 int lastX;
 int lastY;
 
-void Draw(int x, int y, unsigned int color) {
-	WuLine(x, y, lastX, lastY, color);
+void Draw(int x, int y, unsigned int color, int lineWidth) {
+	WuLineW(x, y, lastX, lastY, color, lineWidth);
 	//line(x, y, lastX, lastY, color);
 
 	lastX = x;
@@ -268,10 +303,8 @@ void DrawPixelBuffer() {
 int main() {
 	CreateWindowContext(1280, 720, "Window Title");
 
-	RECT rect;
-	GetClientRect(window, &rect);
-	pixelBufferWidth = rect.right - rect.left;
-	pixelBufferHeight = rect.bottom - rect.top;
+	pixelBufferWidth = 2560;
+	pixelBufferHeight = 1440;
 
 	int pixelBufferSize = pixelBufferWidth * pixelBufferHeight * sizeof(unsigned int);
 
@@ -287,9 +320,21 @@ int main() {
 	lastY = mouseY;
 
 	bool leftMouseButtonDown = false;
+	bool tabDown = false;
+	bool eDown = false;
+	bool upDown = false;
+	bool downDown = false;
+
+	unsigned int activeColor = 0;
+
+	unsigned int colors[11] = {0xffffff, 0xf72585, 0xb5179e, 0x7209b7, 0x560bad, 0x480ca8, 0x3a0ca3, 0x3f37c9, 0x4361ee, 0x4895ef, 0x4cc9f0 };
+
+	bool eraser = false;
+
+	int lineWidth = 4;
 
 	while (running) {
-		ClearWindowColor(0xffffff);
+		ClearWindowColor(0x000000);
 		GetCursorPixelCoordinates(mouseX, mouseY);
 
 		if (GetAsyncKeyState(VK_LBUTTON) & 0x8001) {
@@ -302,7 +347,51 @@ int main() {
 			leftMouseButtonDown = false;
 		}
 
-		if (leftMouseButtonDown) Draw(mouseX, mouseY, 0xffffff);
+		if (GetAsyncKeyState(VK_TAB) & 0x8001) {
+			if (!tabDown) {
+				activeColor++;
+				if (activeColor > 10) activeColor = 0;
+			}
+			tabDown = true;
+		}
+		else {
+			tabDown = false;
+		}
+
+		if (GetAsyncKeyState(VK_UP) & 0x8001) {
+			if (!upDown) {
+				if (lineWidth < 100) lineWidth++;
+			}
+			upDown = true;
+		}
+		else {
+			upDown = false;
+		}
+
+		if (GetAsyncKeyState(VK_DOWN) & 0x8001) {
+			if (!downDown) {
+				if (lineWidth > 1) lineWidth--;
+			}
+			downDown = true;
+		}
+		else {
+			downDown = false;
+		}
+
+		if (GetAsyncKeyState(0x45) & 0x8001) {
+			if (!eDown) {
+				eraser = !eraser;
+			}
+			eDown = true;
+		}
+		else {
+			eDown = false;
+		}
+
+		if (leftMouseButtonDown) {
+			if (!eraser) Draw(mouseX, mouseY, colors[activeColor], lineWidth);
+			else Draw(mouseX, mouseY, 0x000000, 40);
+		}
 
 		DrawPixelBuffer();
 
