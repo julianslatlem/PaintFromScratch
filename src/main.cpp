@@ -14,6 +14,11 @@ LARGE_INTEGER frequency, lastTime, currentTime;
 double deltaTime, fps;
 int frameCount = 0;
 
+int lineWidth = 30;
+
+bool antialiasing = true;
+
+
 LRESULT CALLBACK WindowCallback(HWND window, UINT msg, WPARAM wParam, LPARAM lParam) {
 	LRESULT result = 0;
 
@@ -23,6 +28,30 @@ LRESULT CALLBACK WindowCallback(HWND window, UINT msg, WPARAM wParam, LPARAM lPa
 			PostQuitMessage(0);
 			running = false;
 		} break;
+
+		case WM_MOUSEWHEEL: {
+			// Get the delta value to determine the direction and amount of scrolling.
+			int delta = GET_WHEEL_DELTA_WPARAM(wParam);
+
+			// Process the scroll event based on the delta value.
+			if (delta > 0) {
+				// Scroll up (positive delta)
+				// Handle upward scrolling here
+
+				if (lineWidth < 150) lineWidth += 2 * delta / 120;
+			}
+			else if (delta < 0) {
+				// Scroll down (negative delta)
+				// Handle downward scrolling here
+
+				if (lineWidth > 1) lineWidth += 2 * delta / 120;
+
+				std::cout << delta << std::endl;
+
+			}
+
+			return 0;
+		}
 		
 		case WM_SIZE: {
 			RECT rect;
@@ -281,10 +310,12 @@ void lineS(int x0, int y0, int x1, int y1, unsigned int color, int lineWidth) {
 	int y = y0;
 	for (int x = x0; x <= x1; x++) {
 		if (steep) {
-			FillCircleW(y, x, lineWidth / 2, color);
+			if (antialiasing) FillAntiAliasedCircle(y, x, lineWidth / 2, color);
+			else FillCircleW(y, x, lineWidth / 2, color);
 		}
 		else {
-			FillCircleW(x, y, lineWidth / 2, color);
+			if (antialiasing) FillAntiAliasedCircle(x, y, lineWidth / 2, color);
+			else FillCircleW(x, y, lineWidth / 2, color);
 		}
 		error2 += derror2;
 		if (error2 > dx) {
@@ -411,6 +442,8 @@ int main() {
 	bool tabDown = false;
 	bool eDown = false;
 	bool cDown = false;
+	bool aDown = false;
+	bool iDown = false;
 	bool upDown = false;
 	bool downDown = false;
 	bool scrollUp = false;
@@ -418,12 +451,14 @@ int main() {
 
 	unsigned int activeColor = 0;
 
+	unsigned int clickColor;
+	int clickColorTimer = 0;
+
 	unsigned int colors[11] = {0xffffff, 0xf72585, 0xb5179e, 0x7209b7, 0x560bad, 0x480ca8, 0x3a0ca3, 0x3f37c9, 0x4361ee, 0x4895ef, 0x4cc9f0 };
 
 	bool eraser = false;
 
-	int lineWidth = 30;
-
+	bool dropTool = false;
 
 	// Get the frequency of the performance counter
 	QueryPerformanceFrequency(&frequency);
@@ -464,12 +499,19 @@ int main() {
 			if (!leftMouseButtonDown) {
 				lastX = mouseX; lastY = mouseY;
 				//FillCircleW(mouseX, mouseY, lineWidth / 2, colors[activeColor]);
+				if (PixelGetPixel(mouseX, mouseY) != 0x000000) clickColor = PixelGetPixel(mouseX, mouseY);
+				else clickColor = colors[activeColor];
+
+				if (dropTool) {
+					colors[activeColor] = PixelGetPixel(mouseX, mouseY);
+				}
 			}
 			leftMouseButtonDown = true;
 		}
 		else {
 			if (leftMouseButtonDown) {
 				//FillCircleW(mouseX, mouseY, lineWidth / 2, colors[activeColor]);
+				clickColorTimer = 0;
 			}
 			leftMouseButtonDown = false;
 		}
@@ -515,6 +557,26 @@ int main() {
 			eDown = false;
 		}
 
+		if (GetAsyncKeyState(0x49) & 0x8001) {
+			if (!iDown) {
+				dropTool = !dropTool;
+			}
+			iDown = true;
+		}
+		else {
+			iDown = false;
+		}
+
+		if (GetAsyncKeyState(0x41) & 0x8001) {
+			if (!aDown) {
+				antialiasing = !antialiasing;
+			}
+			aDown = true;
+		}
+		else {
+			aDown = false;
+		}
+
 		if (GetAsyncKeyState(0x43) & 0x8001) {
 			if (!cDown) {
 				ClearCanvas();
@@ -537,7 +599,13 @@ int main() {
 		}
 
 		if (leftMouseButtonDown) {
+			clickColorTimer++;
+			if (clickColorTimer > 3000) {
+				clickColor = PixelGetPixel(mouseX, mouseY);
+			}
+
 			if (!eraser) {
+				//if (lineWidth > 1) Draw(mouseX, mouseY, BlendColors(colors[activeColor], clickColor, 0.2f), lineWidth);
 				if (lineWidth > 1) Draw(mouseX, mouseY, colors[activeColor], lineWidth);
 				else DrawAA(mouseX, mouseY, colors[activeColor]);
 			}
@@ -548,15 +616,22 @@ int main() {
 
 		//DrawRect(mouseX - (lineWidth / 2), mouseY - (lineWidth / 2), mouseX + (lineWidth / 2), mouseY + (lineWidth / 2), colors[activeColor]);
 
-		if (!eraser) {
+		if (!eraser && !dropTool) {
 			FillCircleBlend(mouseX, mouseY, lineWidth / 2, colors[activeColor]);
 			DrawCircle(mouseX, mouseY, lineWidth / 2, colors[activeColor]);
 		}
-		else DrawCircle(mouseX, mouseY, lineWidth, 0xff0000);
+		else if (eraser && !dropTool) DrawCircle(mouseX, mouseY, lineWidth, 0xff0000);
+		else if (dropTool) {
+			DrawCircle(mouseX, mouseY, lineWidth / 2, PixelGetPixel(mouseX, mouseY));
+			DrawCircle(mouseX, mouseY, (lineWidth / 2) - 1, PixelGetPixel(mouseX, mouseY));
+			DrawCircle(mouseX, mouseY, (lineWidth / 2) + 1, PixelGetPixel(mouseX, mouseY));
+			DrawCircle(mouseX, mouseY, (lineWidth / 2) - 2, BlendColors(0x000000, PixelGetPixel(mouseX, mouseY), 0.2f));
+			DrawCircle(mouseX, mouseY, (lineWidth / 2) + 2, BlendColors(0x000000, PixelGetPixel(mouseX, mouseY), 0.2f));
+		}
 
 
 
-
+		//FillAntiAliasedCircle(GetWindowWidth() / 2, GetWindowHeight() / 2, 40, 0xffffff);
 
 		// UI
 
@@ -576,6 +651,15 @@ int main() {
 			WuLineWMain(5, 45, 5, 5, 0xff0000, 1);
 		}
 		else DrawRect(5, 5, 45, 45, colors[activeColor]);
+
+		if (antialiasing) {
+			for (int i = 0; i < 10; i++) {
+				FillAntiAliasedCircleMain(85, 25, 20, colors[activeColor]);
+			}
+		}
+		else {
+			FillCircle(85, 25, 20, colors[activeColor]);
+		}
 
 		UpdateWindow();
 

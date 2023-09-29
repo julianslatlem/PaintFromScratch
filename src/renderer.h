@@ -250,6 +250,46 @@ void FillCircleAntiAliased(int centerX, int centerY, int radius, unsigned int co
 	}
 }
 
+void FillAntiAliasedCircle(int centerX, int centerY, int radius, unsigned int color) {
+	for (int y = -radius; y <= radius; y++) {
+		for (int x = -radius; x <= radius; x++) {
+			float distance = sqrt(x * x + y * y);
+
+			// Calculate the blending factor based on the distance from the circle's center to the current pixel.
+			float alpha = 1.0f - (distance / radius);
+
+			// Ensure alpha is in the range [0, 1].
+			alpha = max(0.0f, min(1.0f, alpha));
+
+			// Calculate the pixel color by blending the circle color with the background color.
+			unsigned int blendedColor = BlendColors(color, PixelGetPixel(centerX + x, centerY + y), alpha);
+
+			// Set the pixel with the blended color.
+			SetPixel(centerX + x, centerY + y, blendedColor);
+		}
+	}
+}
+
+void FillAntiAliasedCircleMain(int centerX, int centerY, int radius, unsigned int color) {
+	for (int y = -radius; y <= radius; y++) {
+		for (int x = -radius; x <= radius; x++) {
+			float distance = sqrt(x * x + y * y);
+
+			// Calculate the blending factor based on the distance from the circle's center to the current pixel.
+			float alpha = 1.0f - (distance / radius);
+
+			// Ensure alpha is in the range [0, 1].
+			alpha = max(0.0f, min(1.0f, alpha));
+
+			// Calculate the pixel color by blending the circle color with the background color.
+			unsigned int blendedColor = BlendColors(color, GetPixel(centerX + x, centerY + y), alpha);
+
+			// Set the pixel with the blended color.
+			DrawPixel(centerX + x, centerY + y, blendedColor);
+		}
+	}
+}
+
 void FillCircleAntiAliasedSSAA(int centerX, int centerY, int radius, unsigned int color, int scaleFactor) {
 	int scaledRadius = radius * scaleFactor;
 	int scaledWidth = scaledRadius * 2;
