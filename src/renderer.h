@@ -115,6 +115,36 @@ void DrawRect(int x0, int y0, int x1, int y1, unsigned int color) {
 	}
 }
 
+// Example function to create a gradient color based on a parameter between 0 and 1
+unsigned int ColorGradient(float param) {
+	int red = (int)(255 * (1.0 - param));
+	int blue = (int)(255 * param);
+	return (red << 16) | (0 << 8) | blue;
+}
+
+void DrawSquareColorPicker(int centerX, int centerY, int cellSize, int numColors) {
+	int colorsPerChannel = ceil(pow(numColors, 1.0 / 3.0));  // Calculate the number of colors per channel
+	int colorStep = 256 / colorsPerChannel;  // Calculate the step for each channel
+
+	for (int r = 0; r < colorsPerChannel; r++) {
+		for (int g = 0; g < colorsPerChannel; g++) {
+			for (int b = 0; b < colorsPerChannel; b++) {
+				// Calculate the position and size of the cell
+				int x0 = centerX + r * cellSize;
+				int y0 = centerY + g * cellSize;
+				int x1 = x0 + cellSize;
+				int y1 = y0 + cellSize;
+
+				// Create the RGB color based on the current values of r, g, and b
+				unsigned int color = ((r * colorStep) << 16) | ((g * colorStep) << 8) | (b * colorStep);
+
+				// Draw the cell with the RGB color
+				DrawRect(x0, y0, x1, y1, color);
+			}
+		}
+	}
+}
+
 void FillCircle(int centerX, int centerY, int radius, unsigned int color) {
 	int x = radius;
 	int y = 0;
@@ -141,6 +171,66 @@ void FillCircle(int centerX, int centerY, int radius, unsigned int color) {
 		}
 	}
 }
+
+unsigned int HSVtoRGB(double hue, double saturation, double value) {
+	int hi = (int)(hue * 6) % 6;
+	double f = hue * 6 - hi;
+	double p = value * (1 - saturation);
+	double q = value * (1 - f * saturation);
+	double t = value * (1 - (1 - f) * saturation);
+
+	switch (hi) {
+	case 0:
+		return ((int)(value * 255) << 16) | ((int)(t * 255) << 8) | (int)(p * 255);
+	case 1:
+		return ((int)(q * 255) << 16) | ((int)(value * 255) << 8) | (int)(p * 255);
+	case 2:
+		return ((int)(p * 255) << 16) | ((int)(value * 255) << 8) | (int)(t * 255);
+	case 3:
+		return ((int)(p * 255) << 16) | ((int)(q * 255) << 8) | (int)(value * 255);
+	case 4:
+		return ((int)(t * 255) << 16) | ((int)(p * 255) << 8) | (int)(value * 255);
+	default: // case 5:
+		return ((int)(value * 255) << 16) | ((int)(p * 255) << 8) | (int)(q * 255);
+	}
+}
+
+
+float M_PI = 3.1415;
+
+void FillSegment(int centerX, int centerY, int radius, double startAngle, double endAngle, unsigned int color) {
+	for (double angle = startAngle; angle < endAngle; angle += 0.01) {  // Step determines the smoothness
+		int x = centerX + radius * cos(angle * M_PI / 180.0);
+		int y = centerY - radius * sin(angle * M_PI / 180.0);
+		DrawPixel(x, y, color);
+	}
+}
+
+void FillColorWheelL(int centerX, int centerY, int radius, float blend) {
+	int segments = 360;  // Number of segments in the color wheel
+
+	for (int i = 0; i < segments; i++) {
+		// Calculate start and end angles for the current segment
+		double startAngle = i * (360.0 / segments);
+		double endAngle = (i + 1) * (360.0 / segments);
+
+		// Calculate the RGB color for the current segment
+		double hue = startAngle / 360.0;
+		unsigned int color = HSVtoRGB(hue, 1.0, 1.0);
+
+		// Fill the current segment with the calculated color
+		FillSegment(centerX, centerY, radius, startAngle, endAngle, BlendColors(0xffffff, color, blend));
+	}
+}
+
+void FillColorWheel(int centerX, int centerY, int radius) {
+	for (int i = radius; i > 0; i--) {
+		float blend = 1.0 - (float)(i - 1) / (float)(radius - 1);  // Linear blend from 0 to 1
+		FillColorWheelL(centerX, centerY, i, blend);
+	}
+}
+
+
 
 void FillCircleBlend(int centerX, int centerY, int radius, unsigned int color) {
 	int x = radius;

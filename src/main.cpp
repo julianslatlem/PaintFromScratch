@@ -325,6 +325,47 @@ void lineS(int x0, int y0, int x1, int y1, unsigned int color, int lineWidth) {
 	}
 }
 
+void lineSTaper(int x0, int y0, int x1, int y1, unsigned int color, int lineWidth) {
+	bool steep = false;
+	if (abs(x0 - x1) < abs(y0 - y1)) {
+		swap(x0, y0);
+		swap(x1, y1);
+		steep = true;
+	}
+	if (x0 > x1) {
+		swap(x0, x1);
+		swap(y0, y1);
+	}
+	int dx = x1 - x0;
+	int dy = y1 - y0;
+	int derror2 = abs(dy) * 2;
+	int error2 = 0;
+	int y = y0;
+	for (int x = x0; x <= x1; x++) {
+		if (steep) {
+			float lLineWidth = lineWidth;
+			if (lLineWidth > 4) lLineWidth -= 0.1f;
+
+			lineWidth = (int)lLineWidth;
+			if (antialiasing) FillAntiAliasedCircle(y, x, lineWidth / 2, color);
+			else FillCircleW(y, x, lineWidth / 2, color);
+		}
+		else {
+			float lLineWidth = lineWidth;
+			if (lLineWidth > 4) lLineWidth -= 0.1f;
+
+			lineWidth = (int)lLineWidth;
+			if (antialiasing) FillAntiAliasedCircle(x, y, lineWidth / 2, color);
+			else FillCircleW(x, y, lineWidth / 2, color);
+		}
+		error2 += derror2;
+		if (error2 > dx) {
+			y += (y1 > y0 ? 1 : -1);
+			error2 -= dx * 2;
+		}
+	}
+}
+
 void lineSMain(int x0, int y0, int x1, int y1, unsigned int color, int lineWidth) {
 	bool steep = false;
 	if (abs(x0 - x1) < abs(y0 - y1)) {
@@ -394,12 +435,22 @@ void WuLineWMain(int x0, int y0, int x1, int y1, unsigned int color, int lineWid
 int lastX;
 int lastY;
 
-int canvasOffsetX = 0;
-int canvasOffsetY = 50;
+int canvasOffsetX = 50;
+int canvasOffsetY = 100;
 
 void Draw(int x, int y, unsigned int color, int lineWidth) {
 	//WuLineW(x, y, lastX, lastY, color, lineWidth);
 	lineS(x - canvasOffsetX, y - canvasOffsetY, lastX - canvasOffsetX, lastY - canvasOffsetY, color, lineWidth);
+	//FillCircleW(x, y, lineWidth / 2, color);
+	//line(x, y, lastX, lastY, color);
+
+	lastX = x;
+	lastY = y;
+}
+
+void DrawTaper(int x, int y, unsigned int color, int lineWidth) {
+	//WuLineW(x, y, lastX, lastY, color, lineWidth);
+	lineSTaper(x - canvasOffsetX, y - canvasOffsetY, lastX - canvasOffsetX, lastY - canvasOffsetY, color, lineWidth);
 	//FillCircleW(x, y, lineWidth / 2, color);
 	//line(x, y, lastX, lastY, color);
 
@@ -452,10 +503,13 @@ void Pan(int currentX, int currentY, int previousX, int previousY) {
 
 
 int main() {
-	CreateWindowContext(1280, 720, "Paint 2.0");
+	CreateWindowContext(1920, 1080, "Paint 2.0");
 
-	pixelBufferWidth = 2560;
-	pixelBufferHeight = 1440;
+	/*pixelBufferWidth = 2560;
+	pixelBufferHeight = 1440;*/
+
+	pixelBufferWidth = 1920 - 100;
+	pixelBufferHeight = 1080 - 150;
 
 	int pixelBufferSize = pixelBufferWidth * pixelBufferHeight * sizeof(unsigned int);
 
@@ -506,7 +560,6 @@ int main() {
 
 	while (running) {
 
-
 		// Calculate delta time (time elapsed since the last frame)
 		QueryPerformanceCounter(&currentTime);
 		deltaTime = static_cast<double>(currentTime.QuadPart - lastTime.QuadPart) / frequency.QuadPart;
@@ -530,7 +583,7 @@ int main() {
 
 
 
-		ClearWindowColor(0x080808);
+		ClearWindowColor(0x232323);
 		GetCursorPixelCoordinates(mouseX, mouseY);
 
 		if (GetAsyncKeyState(VK_LBUTTON) & 0x8001) {
@@ -549,6 +602,7 @@ int main() {
 		else {
 			if (leftMouseButtonDown) {
 				//FillCircleW(mouseX, mouseY, lineWidth / 2, colors[activeColor]);
+				//DrawTaper(mouseX, mouseY, colors[activeColor], lineWidth);
 				clickColorTimer = 0;
 			}
 			leftMouseButtonDown = false;
@@ -628,7 +682,7 @@ int main() {
 
 		if (GetAsyncKeyState(0x43) & 0x8001) {
 			if (!cDown) {
-				ClearCanvas();
+				ClearCanvasColor(0xffffff);
 			}
 			cDown = true;
 		}
@@ -677,9 +731,13 @@ int main() {
 
 
 
+		int w = 10;
+		int w2 = 5;
+		int w3 = 3;
 
-
-
+		DrawRect(canvasOffsetX - w, canvasOffsetY - w, canvasOffsetX + pixelBufferWidth + w, canvasOffsetY + pixelBufferHeight + w, 0x212121);
+		DrawRect(canvasOffsetX - w2, canvasOffsetY - w2, canvasOffsetX + pixelBufferWidth + w2, canvasOffsetY + pixelBufferHeight + w2, 0x202020);
+		DrawRect(canvasOffsetX - w3, canvasOffsetY - w3, canvasOffsetX + pixelBufferWidth + w3, canvasOffsetY + pixelBufferHeight + w3, 0x191919);
 
 		DrawPixelBuffer();
 
@@ -704,8 +762,23 @@ int main() {
 
 		// UI
 
+		/*DrawRect(0, 0, 200, GetWindowHeight(), 0x101010);
+		WuLineWMain(200, 0, 200, GetWindowHeight(), 0x404040, 1);
+		WuLineWMain(199, 0, 199, GetWindowHeight(), 0x000000, 1);
+		WuLineWMain(198, 0, 198, GetWindowHeight(), 0x404040, 1);
+
+		DrawRect(GetWindowWidth() - 100, 0, GetWindowWidth(), GetWindowHeight(), 0x101010);
+		WuLineWMain(GetWindowWidth() - 100, 0, GetWindowWidth() - 100, GetWindowHeight(), 0x404040, 1);
+		WuLineWMain(GetWindowWidth() - 99, 0, GetWindowWidth() - 99, GetWindowHeight(), 0x000000, 1);
+		WuLineWMain(GetWindowWidth() - 98, 0, GetWindowWidth() - 98, GetWindowHeight(), 0x404040, 1);
+
+		DrawRect(0, GetWindowHeight() - 40, GetWindowWidth(), GetWindowHeight(), 0x101010);
+		WuLineWMain(0, GetWindowHeight() - 40, GetWindowWidth(), GetWindowHeight() - 40, 0x404040, 1);
+		WuLineWMain(0, GetWindowHeight() - 39, GetWindowWidth(), GetWindowHeight() - 39, 0x000000, 1);
+		WuLineWMain(0, GetWindowHeight() - 38, GetWindowWidth(), GetWindowHeight() - 38, 0x404040, 1);*/
+
 		DrawRect(0, 0, GetWindowWidth(), 50, 0x101010);
-		WuLineWMain(0, 50, GetWindowWidth(), 50, 0x282828, 1);
+		WuLineWMain(0, 50, GetWindowWidth(), 50, 0x404040, 1);
 		//DrawRect((GetWindowWidth() / 2) - 20, 5, (GetWindowWidth() / 2) + 20, 45, 0xffffff);
 
 		//lineSMain((GetWindowWidth() / 2) - 15, 10, (GetWindowWidth() / 2) + 15, 40, 0xffffff, 10);
@@ -729,6 +802,13 @@ int main() {
 		else {
 			FillCircle(85, 25, 20, colors[activeColor]);
 		}
+
+		//FillColorWheel(100, 150, 80);
+
+		//DrawSquareColorPicker(25, 75, 11, 2000);
+		//DrawCircle(120, 170, 8, 0x494949);
+		//DrawCircle(120, 170, 9, 0x494949);
+
 
 		UpdateWindow();
 
