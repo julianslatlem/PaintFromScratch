@@ -84,6 +84,15 @@ void ClearCanvas() {
 	}
 }
 
+void ClearCanvasColor(unsigned int color) {
+	unsigned int* pixel = (unsigned int*)pixelBufferMemory;
+	for (int y = 0; y < pixelBufferHeight; y++) {
+		for (int x = 0; x < pixelBufferWidth; x++) {
+			*pixel++ = color;
+		}
+	}
+}
+
 void ClearWindowColor(unsigned int color) {
 	unsigned int* pixel = (unsigned int*)bufferMemory;
 	for (int y = 0; y < bufferHeight; y++) {

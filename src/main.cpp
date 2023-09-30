@@ -394,9 +394,12 @@ void WuLineWMain(int x0, int y0, int x1, int y1, unsigned int color, int lineWid
 int lastX;
 int lastY;
 
+int canvasOffsetX = 0;
+int canvasOffsetY = 50;
+
 void Draw(int x, int y, unsigned int color, int lineWidth) {
 	//WuLineW(x, y, lastX, lastY, color, lineWidth);
-	lineS(x, y, lastX, lastY, color, lineWidth);
+	lineS(x - canvasOffsetX, y - canvasOffsetY, lastX - canvasOffsetX, lastY - canvasOffsetY, color, lineWidth);
 	//FillCircleW(x, y, lineWidth / 2, color);
 	//line(x, y, lastX, lastY, color);
 
@@ -405,7 +408,7 @@ void Draw(int x, int y, unsigned int color, int lineWidth) {
 }
 
 void DrawAA(int x, int y, unsigned int color) {
-	WuLine(x, y, lastX, lastY, color);
+	WuLine(x - canvasOffsetX, y - canvasOffsetY, lastX - canvasOffsetX, lastY - canvasOffsetY, color);
 
 	lastX = x;
 	lastY = y;
@@ -414,10 +417,39 @@ void DrawAA(int x, int y, unsigned int color) {
 void DrawPixelBuffer() {
 	for (int y = 0; y < pixelBufferHeight; y++) {
 		for (int x = 0; x < pixelBufferWidth; x++) {
-			DrawPixel(x, y, PixelGetPixel(x, y));
+			DrawPixel(x + canvasOffsetX, y + canvasOffsetY, PixelGetPixel(x, y));
 		}
 	}
 }
+
+
+
+
+
+
+int canvasLastX = 0;
+int canvasLastY = 0;
+
+
+
+
+void Pan(int currentX, int currentY, int previousX, int previousY) {
+	int deltaX = currentX - previousX;
+	int deltaY = currentY - previousY;
+	canvasOffsetX += deltaX;
+	canvasOffsetY += deltaY;
+}
+
+
+
+
+
+
+
+
+
+
+
 
 int main() {
 	CreateWindowContext(1280, 720, "Paint 2.0");
@@ -448,13 +480,16 @@ int main() {
 	bool downDown = false;
 	bool scrollUp = false;
 	bool scrollDown = false;
+	bool middleMouseDown = false;
+
+	bool pan = false;
 
 	unsigned int activeColor = 0;
 
 	unsigned int clickColor;
 	int clickColorTimer = 0;
 
-	unsigned int colors[11] = {0xffffff, 0xf72585, 0xb5179e, 0x7209b7, 0x560bad, 0x480ca8, 0x3a0ca3, 0x3f37c9, 0x4361ee, 0x4895ef, 0x4cc9f0 };
+	unsigned int colors[11] = {0x000000, 0xf72585, 0xb5179e, 0x7209b7, 0x560bad, 0x480ca8, 0x3a0ca3, 0x3f37c9, 0x4361ee, 0x4895ef, 0x4cc9f0 };
 
 	bool eraser = false;
 
@@ -465,6 +500,9 @@ int main() {
 
 	// Get the initial time
 	QueryPerformanceCounter(&lastTime);
+
+	ClearCanvasColor(0xffffff);
+
 
 	while (running) {
 
@@ -492,18 +530,18 @@ int main() {
 
 
 
-		ClearWindowColor(0x000000);
+		ClearWindowColor(0x080808);
 		GetCursorPixelCoordinates(mouseX, mouseY);
 
 		if (GetAsyncKeyState(VK_LBUTTON) & 0x8001) {
 			if (!leftMouseButtonDown) {
 				lastX = mouseX; lastY = mouseY;
 				//FillCircleW(mouseX, mouseY, lineWidth / 2, colors[activeColor]);
-				if (PixelGetPixel(mouseX, mouseY) != 0x000000) clickColor = PixelGetPixel(mouseX, mouseY);
+				if (PixelGetPixel(mouseX, mouseY) != 0xffffff) clickColor = GetPixel(mouseX, mouseY);
 				else clickColor = colors[activeColor];
 
 				if (dropTool) {
-					colors[activeColor] = PixelGetPixel(mouseX, mouseY);
+					colors[activeColor] = GetPixel(mouseX, mouseY);
 				}
 			}
 			leftMouseButtonDown = true;
@@ -514,6 +552,17 @@ int main() {
 				clickColorTimer = 0;
 			}
 			leftMouseButtonDown = false;
+		}
+
+		if (GetAsyncKeyState(0x04) & 0x8001) {
+			if (!middleMouseDown) {
+				lastX = mouseX;
+				lastY = mouseY;
+			}
+			middleMouseDown = true;
+		}
+		else {
+			middleMouseDown = false;
 		}
 
 		if (GetAsyncKeyState(VK_TAB) & 0x8001) {
@@ -559,7 +608,7 @@ int main() {
 
 		if (GetAsyncKeyState(0x49) & 0x8001) {
 			if (!iDown) {
-				dropTool = !dropTool;
+				//dropTool = !dropTool;
 			}
 			iDown = true;
 		}
@@ -609,8 +658,28 @@ int main() {
 				if (lineWidth > 1) Draw(mouseX, mouseY, colors[activeColor], lineWidth);
 				else DrawAA(mouseX, mouseY, colors[activeColor]);
 			}
-			else Draw(mouseX, mouseY, 0x000000, lineWidth * 2);
+			else Draw(mouseX, mouseY, 0xffffff, lineWidth * 2);
 		}
+
+
+
+
+
+
+		if (middleMouseDown) {
+			pan = true;
+			Pan(mouseX, mouseY, lastX, lastY);
+			lastX = mouseX;
+			lastY = mouseY;
+		}
+
+
+
+
+
+
+
+
 
 		DrawPixelBuffer();
 
@@ -622,11 +691,11 @@ int main() {
 		}
 		else if (eraser && !dropTool) DrawCircle(mouseX, mouseY, lineWidth, 0xff0000);
 		else if (dropTool) {
-			DrawCircle(mouseX, mouseY, lineWidth / 2, PixelGetPixel(mouseX, mouseY));
-			DrawCircle(mouseX, mouseY, (lineWidth / 2) - 1, PixelGetPixel(mouseX, mouseY));
-			DrawCircle(mouseX, mouseY, (lineWidth / 2) + 1, PixelGetPixel(mouseX, mouseY));
-			DrawCircle(mouseX, mouseY, (lineWidth / 2) - 2, BlendColors(0x000000, PixelGetPixel(mouseX, mouseY), 0.2f));
-			DrawCircle(mouseX, mouseY, (lineWidth / 2) + 2, BlendColors(0x000000, PixelGetPixel(mouseX, mouseY), 0.2f));
+			DrawCircle(mouseX, mouseY, lineWidth / 2, GetPixel(mouseX, mouseY));
+			DrawCircle(mouseX, mouseY, (lineWidth / 2) - 1, GetPixel(mouseX, mouseY));
+			DrawCircle(mouseX, mouseY, (lineWidth / 2) + 1, GetPixel(mouseX, mouseY));
+			DrawCircle(mouseX, mouseY, (lineWidth / 2) - 2, BlendColors(0x000000, GetPixel(mouseX, mouseY), 0.2f));
+			DrawCircle(mouseX, mouseY, (lineWidth / 2) + 2, BlendColors(0x000000, GetPixel(mouseX, mouseY), 0.2f));
 		}
 
 
