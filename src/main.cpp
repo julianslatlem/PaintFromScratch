@@ -435,8 +435,8 @@ void WuLineWMain(int x0, int y0, int x1, int y1, unsigned int color, int lineWid
 int lastX;
 int lastY;
 
-int canvasOffsetX = 50;
-int canvasOffsetY = 100;
+int canvasOffsetX = 0;
+int canvasOffsetY = 50;
 
 void Draw(int x, int y, unsigned int color, int lineWidth) {
 	//WuLineW(x, y, lastX, lastY, color, lineWidth);
@@ -505,11 +505,11 @@ void Pan(int currentX, int currentY, int previousX, int previousY) {
 int main() {
 	CreateWindowContext(1920, 1080, "Paint 2.0");
 
-	/*pixelBufferWidth = 2560;
-	pixelBufferHeight = 1440;*/
+	pixelBufferWidth = 2560;
+	pixelBufferHeight = 1440;
 
-	pixelBufferWidth = 1920 - 100;
-	pixelBufferHeight = 1080 - 150;
+	/*pixelBufferWidth = 1920 - 100;
+	pixelBufferHeight = 1080 - 150;*/
 
 	int pixelBufferSize = pixelBufferWidth * pixelBufferHeight * sizeof(unsigned int);
 
@@ -583,7 +583,7 @@ int main() {
 
 
 
-		ClearWindowColor(0x232323);
+		ClearWindowColor(0x191919);
 		GetCursorPixelCoordinates(mouseX, mouseY);
 
 		if (GetAsyncKeyState(VK_LBUTTON) & 0x8001) {
@@ -735,9 +735,9 @@ int main() {
 		int w2 = 5;
 		int w3 = 3;
 
-		DrawRect(canvasOffsetX - w, canvasOffsetY - w, canvasOffsetX + pixelBufferWidth + w, canvasOffsetY + pixelBufferHeight + w, 0x212121);
-		DrawRect(canvasOffsetX - w2, canvasOffsetY - w2, canvasOffsetX + pixelBufferWidth + w2, canvasOffsetY + pixelBufferHeight + w2, 0x202020);
-		DrawRect(canvasOffsetX - w3, canvasOffsetY - w3, canvasOffsetX + pixelBufferWidth + w3, canvasOffsetY + pixelBufferHeight + w3, 0x191919);
+		DrawRect(canvasOffsetX - w, canvasOffsetY - w, canvasOffsetX + pixelBufferWidth + w, canvasOffsetY + pixelBufferHeight + w, 0x181818);
+		DrawRect(canvasOffsetX - w2, canvasOffsetY - w2, canvasOffsetX + pixelBufferWidth + w2, canvasOffsetY + pixelBufferHeight + w2, 0x161616);
+		DrawRect(canvasOffsetX - w3, canvasOffsetY - w3, canvasOffsetX + pixelBufferWidth + w3, canvasOffsetY + pixelBufferHeight + w3, 0x151515);
 
 		DrawPixelBuffer();
 
