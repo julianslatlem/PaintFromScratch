@@ -49,7 +49,7 @@ namespace WindowsWindow {
 
 		WNDCLASSA windowClass = {};
 		windowClass.hInstance = instance;
-		windowClass.hCursor = LoadCursor(NULL, IDC_ARROW);
+		//windowClass.hCursor = LoadCursor(NULL, IDC_ARROW);
 		windowClass.lpszClassName = title;
 		windowClass.lpfnWndProc = WindowCallback;
 
@@ -137,6 +137,10 @@ public:
 		this->m_title = title;
 
 		SetWindowTextA(this->window, title);
+	}
+
+	void SetCur(HCURSOR cursor) {
+		SetCursor(cursor);
 	}
 
 	/*Returns the position of the mouse relative to the window in pixels.*/

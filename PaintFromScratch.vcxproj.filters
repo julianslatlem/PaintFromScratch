@@ -47,5 +47,64 @@
     <ClInclude Include="src\brush.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\color.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="cursors\Alter.cur">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="cursors\Brush.cur">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="cursors\Busy.cur">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="cursors\Diagonal1.cur">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="cursors\Diagonal2.cur">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="cursors\grab.cur">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="cursors\Horizontal.cur">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="cursors\Link.cur">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="cursors\Move.cur">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="cursors\Move1.cur">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="cursors\Normal.cur">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="cursors\Normal1.cur">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="cursors\Pencil.cur">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="cursors\Prec.cur">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="cursors\Slide.cur">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="cursors\Text.cur">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="cursors\Unavailable.cur">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="cursors\Vertical.cur">
+      <Filter>Resource Files</Filter>
+    </None>
   </ItemGroup>
 </Project>

@@ -18,6 +18,14 @@ public:
 		m_bufferMemory = VirtualAlloc(0, this->m_bufferSize, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
 	}
 
+	int GetWidth() {
+		return this->m_width;
+	}
+
+	int GetHeight() {
+		return this->m_height;
+	}
+
 	unsigned int GetPixel(int x, int y) {
 		if (x >= 0 && x < m_width && y >= 0 && y < m_height) {
 			unsigned int* pixel = (unsigned int*)m_bufferMemory + x + y * m_width;
@@ -41,38 +49,13 @@ public:
 		}
 	}
 
-	unsigned int BlendColors(unsigned int sourceColor, unsigned int destColor, float alpha) {
-		// Extract the individual color channels (RGBA) from the source and destination colors.
-		unsigned int sourceR = (sourceColor >> 16) & 0xFF;
-		unsigned int sourceG = (sourceColor >> 8) & 0xFF;
-		unsigned int sourceB = sourceColor & 0xFF;
-		unsigned int sourceA = (sourceColor >> 24) & 0xFF;
-
-		unsigned int destR = (destColor >> 16) & 0xFF;
-		unsigned int destG = (destColor >> 8) & 0xFF;
-		unsigned int destB = destColor & 0xFF;
-		unsigned int destA = (destColor >> 24) & 0xFF;
-
-		// Calculate the blended color channels using alpha blending.
-		unsigned int blendedR = static_cast<unsigned int>((sourceR * alpha) + (destR * (1.0f - alpha)));
-		unsigned int blendedG = static_cast<unsigned int>((sourceG * alpha) + (destG * (1.0f - alpha)));
-		unsigned int blendedB = static_cast<unsigned int>((sourceB * alpha) + (destB * (1.0f - alpha)));
-		unsigned int blendedA = static_cast<unsigned int>((sourceA * alpha) + (destA * (1.0f - alpha)));
-
-		// Combine the blended color channels into a single color value.
-		unsigned int blendedColor =
-			(blendedA << 24) | (blendedR << 16) | (blendedG << 8) | blendedB;
-
-		return blendedColor;
-	}
-
 	void Brush(Canvas& canvas, int centerX, int centerY, int radius, unsigned int color) {
 		for (int y = -radius; y <= radius; y++) {
 			for (int x = -radius; x <= radius; x++) {
-				float distance = sqrt(x * x + y * y);
+				double distance = sqrt(x * x + y * y);
 
 				// Calculate the blending factor based on the distance from the circle's center to the current pixel.
-				float alpha = 1.0f - (distance / radius);
+				double alpha = 1.0f - (distance / radius);
 
 				// Ensure alpha is in the range [0, 1].
 				alpha = max(0.0f, min(1.0f, alpha));

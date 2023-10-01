@@ -5,7 +5,12 @@ namespace KeyCode {
         LEFT_MOUSE_BUTTON = 1,
         RIGHT_MOUSE_BUTTON = 2,
         MIDDLE_MOUSE_BUTTON = 4,
+        TAB = 9,
         SPACE = 32,
+        LEFT = 37,
+        UP = 38,
+        RIGHT = 39,
+        DOWN = 40,
         A = 65,
         B = 66,
         C = 67,
@@ -32,6 +37,7 @@ namespace KeyCode {
         X = 88,
         Y = 89,
         Z = 90,
+        ALT = 164,
     };
 }
 
@@ -64,4 +70,21 @@ namespace Input {
         return false;
     }
 
+    bool GetKeyReleased(int button) {
+        static bool keyStates[256] = { false }; // Initialize key states to false
+
+        bool isPressed = (GetAsyncKeyState(button) & 0x8000) != 0;
+
+        if (!isPressed && keyStates[button]) {
+            // Key was pressed in the previous iteration but is not pressed now
+            keyStates[button] = false;
+            return true;
+        }
+        else if (isPressed) {
+            // Key is pressed in the current iteration
+            keyStates[button] = true;
+        }
+
+        return false;
+    }
 }
