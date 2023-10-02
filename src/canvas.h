@@ -49,27 +49,28 @@ public:
 		}
 	}
 
-	void Brush(Canvas& canvas, int centerX, int centerY, int radius, unsigned int color) {
+	void Brush(Canvas& canvas, int centerX, int centerY, int radius, unsigned int color, double hardness) {
+		hardness = hardness * 10;
 		for (int y = -radius; y <= radius; y++) {
 			for (int x = -radius; x <= radius; x++) {
 				double distance = sqrt(x * x + y * y);
 
-				// Calculate the blending factor based on the distance from the circle's center to the current pixel.
-				double alpha = 1.0f - (distance / radius);
+				if (distance <= radius) {
+					double alpha = hardness * (1.0f - (distance / radius));
 
-				// Ensure alpha is in the range [0, 1].
-				alpha = max(0.0f, min(1.0f, alpha));
+					// Ensure alpha is in the range [0, 1]
+					alpha = max(0.0f, min(1.0f, alpha));
 
-				// Calculate the pixel color by blending the circle color with the background color.
-				unsigned int blendedColor = BlendColors(color, GetPixel(centerX + x, centerY + y), alpha);
-
-				// Set the pixel with the blended color.
-				canvas.SetPixel(centerX + x, centerY + y, blendedColor);
+					if (alpha > 0.0f) {
+						unsigned int blendedColor = BlendColors(color, GetPixel(centerX + x, centerY + y), alpha);
+						canvas.SetPixel(centerX + x, centerY + y, blendedColor);
+					}
+				}
 			}
 		}
 	}
 
-	void Line(int x0, int y0, int x1, int y1, unsigned int color, int lineWidth, Canvas& canvas) {
+	void Line(int x0, int y0, int x1, int y1, unsigned int color, int lineWidth, Canvas& canvas, double hardness) {
 		bool steep = false;
 		if (abs(x0 - x1) < abs(y0 - y1)) {
 			swap(x0, y0);
@@ -90,11 +91,11 @@ public:
 		for (int x = x0; x <= x1; x++) {
 			if (f > lineWidth / 10) {
 				if (steep) {
-					Brush(canvas, y, x, lineWidth, color);
+					Brush(canvas, y, x, lineWidth, color, hardness);
 
 				}
 				else {
-					Brush(canvas, x, y, lineWidth, color);
+					Brush(canvas, x, y, lineWidth, color, hardness);
 
 				}
 				f = 0;
@@ -109,17 +110,17 @@ public:
 		}
 	}
 
-	void Draw(int lastX, int lastY, int x, int y, Canvas& canvas, unsigned int color, int size) {
+	void Draw(int lastX, int lastY, int x, int y, Canvas& canvas, unsigned int color, int size, double hardness) {
 		int x0 = min(lastX, x);
 		int x1 = max(lastX, x);
 		int y0 = min(lastY, y);
 		int y1 = max(lastY, y);
 
 		if (x1 - x0 > size / 10 || y1 - y0 > size / 10) {
-			Line(lastX, lastY, x, y, color, size, canvas);
+			Line(lastX, lastY, x, y, color, size, canvas, hardness);
 		}
 		else {
-			Brush(canvas, x1, y1, size, color);
+			Brush(canvas, x1, y1, size, color, hardness);
 		}
 	}
 

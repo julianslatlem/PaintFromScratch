@@ -207,4 +207,43 @@ namespace Renderer {
 			}
 		}
 	}
+
+	void DrawTri(int t0X, int t0Y, int t1X, int t1Y, int t2X, int t2Y, unsigned int color) {
+		if (t0Y == t1Y && t0Y == t2Y) return;
+
+		if (t0Y > t1Y) {
+			swap(t0X, t1X);
+			swap(t0Y, t1Y);
+		}
+		if (t0Y > t2Y) {
+			swap(t0X, t2X);
+			swap(t0Y, t2Y);
+		}
+		if (t1Y > t2Y) {
+			swap(t1X, t2X);
+			swap(t1Y, t2Y);
+		}
+
+		int total_height = t2Y - t0Y;
+		for (int i = 0; i < total_height; i++) {
+			bool second_half = i > t1Y - t0Y || t1Y == t0Y;
+			int segment_height = second_half ? t2Y - t1Y : t1Y - t0Y;
+			float alpha = (float)i / total_height;
+			float beta = (float)(i - (second_half ? t1Y - t0Y : 0)) / segment_height;
+
+			int Ax = t0X + (t2X - t0X) * alpha;
+			int Ay = t0Y + (t2Y - t0Y) * alpha;
+			int Bx = second_half ? t1X + (t2X - t1X) * beta : t0X + (t1X - t0X) * beta;
+			int By = second_half ? t1Y + (t2Y - t1Y) * beta : t0Y + (t1Y - t0Y) * beta;
+
+			if (Ax > Bx) {
+				swap(Ax, Bx);
+				swap(Ay, By);
+			}
+
+			for (int j = Ax; j <= Bx; j++) {
+				SetPixel(j, t0Y + i, color);
+			}
+		}
+	}
 }

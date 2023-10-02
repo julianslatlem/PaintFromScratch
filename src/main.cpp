@@ -9,6 +9,10 @@ int main() {
 	window.Init(1920, 1080, "Photoshop 2.0", &running);
 
 	Canvas canvas;
+	Canvas canvas2;
+
+	canvas2.Init(100, 100);
+	canvas2.Clear();
 
 	canvas.Init(1920, 1080);
 	canvas.Clear();
@@ -31,6 +35,7 @@ int main() {
 	int colorIndex = 0;
 
 	int brushSize = 30;
+	double brushHardness = 0.2;
 
 	int startPosX = 0;
 	int startPosY = 0;
@@ -54,6 +59,10 @@ int main() {
 	int colorPosY = 160;
 
 	bool isChangingColor = false;
+
+	int triPosX = 80;
+
+	bool isChangingHardness = false;
 
 	//HCURSOR cursor;
 
@@ -113,11 +122,23 @@ int main() {
 			eraser = !eraser;
 		}
 
-		if (Input::GetKeyPressed(KeyCode::LEFT_MOUSE_BUTTON)) {
+		if (Input::GetKeyPressed(KeyCode::LEFT_MOUSE_BUTTON) || Input::GetKeyPressed(KeyCode::G)) {
 			previousX = mouseX;
 			previousY = mouseY;
+			if (!eraser && !isChangingSize && !pan) {
+				brush.SetColor(colors[colorIndex]);
+				brush.SetSize(brushSize);
+				brush.SetHardness(brushHardness);
+				brush.Paint(previousX - canvasOffsetX, previousY - canvasOffsetY, mouseX - canvasOffsetX, mouseY - canvasOffsetY, canvas);
+			}
+			else if (!isChangingSize && !pan) {
+				brush.SetColor(0xffffff);
+				brush.SetSize(brushSize * 1.5);
+				brush.SetHardness(brushHardness);
+				brush.Paint(previousX - canvasOffsetX, previousY - canvasOffsetY, mouseX - canvasOffsetX, mouseY - canvasOffsetY, canvas);
+			}
 		}
-		if (Input::GetKeyDown(KeyCode::LEFT_MOUSE_BUTTON)) {
+		if (Input::GetKeyDown(KeyCode::LEFT_MOUSE_BUTTON) || Input::GetKeyDown(KeyCode::G)) {
 			if (Input::GetKeyDown(KeyCode::SPACE)) {
 				int deltaX = mouseX - previousX;
 				int deltaY = mouseY - previousY;
@@ -133,15 +154,19 @@ int main() {
 				previousY = mouseY;
 			}
 			else {
-				if (!eraser) {
-					brush.SetColor(colors[colorIndex]);
-					brush.SetSize(brushSize);
-					brush.Paint(previousX - canvasOffsetX, previousY - canvasOffsetY, mouseX - canvasOffsetX, mouseY - canvasOffsetY, canvas);
-				}
-				else {
-					brush.SetColor(0xffffff);
-					brush.SetSize(brushSize * 1.5);
-					brush.Paint(previousX - canvasOffsetX, previousY - canvasOffsetY, mouseX - canvasOffsetX, mouseY - canvasOffsetY, canvas);
+				if (mouseX != previousX || mouseY != previousY) {
+					if (!eraser) {
+						brush.SetColor(colors[colorIndex]);
+						brush.SetSize(brushSize);
+						brush.SetHardness(brushHardness);
+						brush.Paint(previousX - canvasOffsetX, previousY - canvasOffsetY, mouseX - canvasOffsetX, mouseY - canvasOffsetY, canvas);
+					}
+					else {
+						brush.SetColor(0xffffff);
+						brush.SetSize(brushSize * 1.5);
+						brush.SetHardness(brushHardness);
+						brush.Paint(previousX - canvasOffsetX, previousY - canvasOffsetY, mouseX - canvasOffsetX, mouseY - canvasOffsetY, canvas);
+					}
 				}
 
 				previousX = mouseX;
@@ -246,13 +271,20 @@ int main() {
 			}
 		}
 
+		if (mouseX > window.GetWidth() - 180 && mouseX < window.GetWidth() - 20 && mouseY < window.GetHeight() - 272 && mouseY > window.GetHeight() - 296) {
+			if (Input::GetKeyDown(KeyCode::LEFT_MOUSE_BUTTON)) {
+				isChangingHardness = true;
+			}
+		}
+
 		if (Input::GetKeyReleased(KeyCode::LEFT_MOUSE_BUTTON)) {
 			isChangingColor = false;
 			isChangingHue = false;
+			isChangingHardness = false;
 		}
 
 		if (isChangingHue) {
-			huePosX = mouseX - (window.GetWidth() - 180);
+			huePosX = mouseX - (window.GetWidth() - 185);
 			if (huePosX < 0) huePosX = 0;
 			if (huePosX > 160) huePosX = 160;
 		}
@@ -267,6 +299,18 @@ int main() {
 			if (colorPosY > 160) colorPosY = 160;
 		}
 
+		if (isChangingHardness) {
+			triPosX = mouseX - (window.GetWidth() - 184);
+
+			if (triPosX < 0) triPosX = 0;
+			if (triPosX > 160) triPosX = 160;
+		}
+
+		brushHardness = 0.02 + (((double)triPosX / 160)) * (((double)triPosX / 160));
+
+
+
+
 		Renderer::DrawHueSlider(window.GetWidth() - 180, window.GetHeight() - 250, window.GetWidth() - 20, window.GetHeight() - 230);
 		int colorPickerHue = RGBToHue(Renderer::GetPixel((window.GetWidth() - 180) + huePosX, window.GetHeight() - 240));
 
@@ -280,6 +324,13 @@ int main() {
 		Renderer::DrawCircle((window.GetWidth() - 180) + huePosX, window.GetHeight() - 240, 6, 0x000000);
 
 		colors[colorIndex] = Renderer::GetPixel(window.GetWidth() - 180 + colorPosX, window.GetHeight() - 210 + colorPosY);
+
+		Renderer::DrawRect(window.GetWidth() - 180, window.GetHeight() - 279, window.GetWidth() - 20, window.GetHeight() - 281, 0x696969);
+
+		int triOffsetX = window.GetWidth() - 184 + triPosX;
+		int triOffsetY = window.GetHeight() - 293;
+
+		Renderer::DrawTri(triOffsetX, triOffsetY, triOffsetX + 10, triOffsetY, triOffsetX + 5, triOffsetY + 10, 0xafafaf);
 
 
 
