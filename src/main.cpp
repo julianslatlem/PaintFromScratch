@@ -284,7 +284,7 @@ int main() {
 		}
 
 		if (isChangingHue) {
-			huePosX = mouseX - (window.GetWidth() - 185);
+			huePosX = mouseX - (window.GetWidth() - 185) - 5;
 			if (huePosX < 0) huePosX = 0;
 			if (huePosX > 160) huePosX = 160;
 		}
@@ -300,7 +300,7 @@ int main() {
 		}
 
 		if (isChangingHardness) {
-			triPosX = mouseX - (window.GetWidth() - 184);
+			triPosX = mouseX - (window.GetWidth() - 184) - 5;
 
 			if (triPosX < 0) triPosX = 0;
 			if (triPosX > 160) triPosX = 160;
