@@ -85,24 +85,42 @@ public:
 		int derror2 = abs(dy) * 2;
 		int error2 = 0;
 		int y = y0;
-		for (int x = x0; x <= x1; x++) {
-			if (steep) {
-				Brush(canvas, y, x, lineWidth, color);
-			}
-			else {
-				Brush(canvas, x, y, lineWidth, color);
 
+		int f = 0;
+		for (int x = x0; x <= x1; x++) {
+			if (f > lineWidth / 10) {
+				if (steep) {
+					Brush(canvas, y, x, lineWidth, color);
+
+				}
+				else {
+					Brush(canvas, x, y, lineWidth, color);
+
+				}
+				f = 0;
 			}
+			f++;
 			error2 += derror2;
 			if (error2 > dx) {
 				y += (y1 > y0 ? 1 : -1);
 				error2 -= dx * 2;
 			}
+
 		}
 	}
 
 	void Draw(int lastX, int lastY, int x, int y, Canvas& canvas, unsigned int color, int size) {
-		Line(lastX, lastY, x, y, color, size, canvas);
+		int x0 = min(lastX, x);
+		int x1 = max(lastX, x);
+		int y0 = min(lastY, y);
+		int y1 = max(lastY, y);
+
+		if (x1 - x0 > size / 10 || y1 - y0 > size / 10) {
+			Line(lastX, lastY, x, y, color, size, canvas);
+		}
+		else {
+			Brush(canvas, x1, y1, size, color);
+		}
 	}
 
 	void Display(int offsetX, int offsetY) {
